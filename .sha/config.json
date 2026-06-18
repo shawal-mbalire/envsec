@@ -1,8 +1,8 @@
 {
   "name": "envsec",
   "version": "0.1.0",
-  "description": "Local-first encrypted secret manager",
-  "features": ["cli", "web-client"],
+  "description": "Local-first encrypted secret manager with real-time sync",
+  "features": ["cli", "web-client", "workers"],
   "modules": {
     "cli": {
       "type": "rust",
@@ -13,10 +13,16 @@
       "type": "angular",
       "path": "frontend",
       "description": "envsec web dashboard"
+    },
+    "workers": {
+      "type": "cloudflare-workers",
+      "path": "workers",
+      "description": "WebRTC signaling server for device sync"
     }
   },
   "deployment": {
-    "target": "firebase",
-    "project": "envsec"
+    "target": "firebase+cloudflare",
+    "firebase_project": "envsec",
+    "cloudflare_worker": "envsec-signaling"
   }
 }

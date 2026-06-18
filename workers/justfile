@@ -1,0 +1,30 @@
+# Workers module commands
+# Run: just --justfile workers/justfile <command>
+
+# Default: list commands
+default:
+    @just --list
+
+# Install dependencies
+install:
+    npm install
+
+# Start local dev server
+dev:
+    npx wrangler dev
+
+# Deploy to Cloudflare
+deploy:
+    npx wrangler deploy
+
+# Tail production logs
+tail:
+    npx wrangler tail
+
+# Type check
+lint:
+    npx tsc --noEmit
+
+# Clean artifacts
+clean:
+    rm -rf node_modules .wrangler

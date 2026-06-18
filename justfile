@@ -1,56 +1,95 @@
 # envsec monorepo
 # Run: just <command>
 
+# Module imports
+mod cli "cli/justfile"
+mod frontend "frontend/justfile"
+mod workers "workers/justfile"
+
 # Default: list all commands
 default:
     @just --list
 
-# --- CLI (Rust) ---
+# --- CLI ---
 
-# Build debug binary
+# Build CLI debug binary
 cli-build:
-    cd cli && cargo build
+    just cli build
 
 # Run CLI tests
 cli-test:
-    cd cli && cargo test
+    just cli test
 
-# Build optimized release binary
+# Build CLI release binary
 cli-release:
-    cd cli && cargo build --release
+    just cli release
 
-# Run CLI lints
+# Lint CLI
 cli-lint:
-    cd cli && cargo clippy -- -D warnings
-    cd cli && cargo fmt --check
+    just cli lint
 
 # Format CLI code
 cli-fmt:
-    cd cli && cargo fmt
+    just cli fmt
 
-# --- Frontend (Angular) ---
+# Clean CLI
+cli-clean:
+    just cli clean
+
+# --- Frontend ---
 
 # Install frontend dependencies
 fe-install:
-    cd frontend && bun install
+    just frontend install
 
 # Start frontend dev server
 fe-dev:
-    cd frontend && bun start
+    just frontend dev
 
 # Build frontend for production
 fe-build:
-    cd frontend && bun run build:prod
+    just frontend build
 
 # Run frontend tests
 fe-test:
-    cd frontend && bun test
+    just frontend test
+
+# Clean frontend
+fe-clean:
+    just frontend clean
+
+# --- Workers ---
+
+# Install workers dependencies
+workers-install:
+    just workers install
+
+# Start workers dev server (local)
+workers-dev:
+    just workers dev
+
+# Deploy workers to Cloudflare
+workers-deploy:
+    just workers deploy
+
+# Tail workers logs
+workers-tail:
+    just workers tail
+
+# Lint workers
+workers-lint:
+    just workers lint
+
+# Clean workers
+workers-clean:
+    just workers clean
 
 # --- Orchestration ---
 
 # Install all dependencies
 install:
     just fe-install
+    just workers-install
 
 # Build everything
 build:
@@ -65,13 +104,19 @@ test:
 # Lint everything
 lint:
     just cli-lint
+    just workers-lint
+
+# Start all dev servers (parallel)
+dev:
+    just --parallel workers-dev fe-dev
 
 # Clean everything
 clean:
-    cd cli && cargo clean
-    cd frontend && rm -rf dist node_modules .angular
+    just cli-clean
+    just fe-clean
+    just workers-clean
 
-# Create a release tag and push
+# Create a release tag and push (triggers CI binary builds)
 publish version:
     git tag v{{version}}
     git push origin v{{version}}

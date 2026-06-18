@@ -1,0 +1,30 @@
+# Frontend module commands
+# Run: just --justfile frontend/justfile <command>
+
+# Default: list commands
+default:
+    @just --list
+
+# Install dependencies
+install:
+    bun install
+
+# Start dev server
+dev:
+    bun start
+
+# Build for production
+build:
+    bun run build:prod
+
+# Run tests
+test:
+    bun test
+
+# Run tests in watch mode
+test-watch:
+    bun test:watch
+
+# Clean artifacts
+clean:
+    rm -rf dist node_modules .angular

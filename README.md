@@ -1,6 +1,6 @@
 # envsec
 
-Local-first encrypted secret manager. A self-hosted, git-shareable alternative to Doppler.
+Local-first encrypted secret manager with real-time device sync.
 
 ## Monorepo Structure
 
@@ -11,12 +11,17 @@ envsec/
 ├── cli/                     # Rust CLI binary
 │   ├── src/
 │   ├── Cargo.toml
-│   └── install.sh
+│   ├── install.sh
+│   └── justfile
 ├── frontend/                # Angular 22 web dashboard
 │   ├── src/
 │   ├── package.json
-│   └── angular.json
-├── justfile                 # Master task runner
+│   └── justfile
+├── workers/                 # Cloudflare Workers (WebRTC signaling)
+│   ├── src/
+│   ├── wrangler.toml
+│   └── justfile
+├── justfile                 # Master orchestrator
 └── README.md
 ```
 
@@ -24,7 +29,9 @@ envsec/
 
 - [Rust](https://rustup.rs/) 1.70+
 - [Bun](https://bun.sh) 1.0+
+- [Node](https://nodejs.org/) 20+
 - [Just](https://github.com/casey/just) — task runner
+- [Wrangler](https://developers.cloudflare.com/workers/wrangler/) — Cloudflare CLI
 
 ## Quick Start
 
@@ -32,17 +39,11 @@ envsec/
 # List all commands
 just
 
-# Install frontend dependencies
-just fe-install
+# Install all dependencies
+just install
 
-# Build CLI
-just cli-build
-
-# Run CLI tests
-just cli-test
-
-# Start frontend dev server
-just fe-dev
+# Start dev servers (workers + frontend in parallel)
+just dev
 
 # Build everything
 just build
@@ -50,6 +51,67 @@ just build
 # Test everything
 just test
 ```
+
+## Module Commands
+
+### CLI (Rust)
+
+```bash
+just cli-build      # Build debug binary
+just cli-test       # Run tests
+just cli-release    # Build optimized binary
+just cli-lint       # Clippy + fmt check
+```
+
+### Frontend (Angular 22)
+
+```bash
+just fe-install     # Install dependencies
+just fe-dev         # Start dev server (:4200)
+just fe-build       # Production build
+just fe-test        # Run tests
+```
+
+### Workers (Cloudflare)
+
+```bash
+just workers-install    # Install dependencies
+just workers-dev        # Start local dev server (:8787)
+just workers-deploy     # Deploy to Cloudflare
+just workers-tail       # Tail production logs
+just workers-lint       # Type check
+```
+
+## Real-Time Device Sync
+
+The `workers/` module provides a WebRTC signaling server for syncing secrets between online devices.
+
+### How it works
+
+1. Devices connect via WebSocket to the signaling server
+2. Each room (project) has a Durable Object managing connections
+3. Devices are tracked as "online" with presence updates
+4. When a secret is updated, other devices are notified
+5. WebRTC peer connections handle direct secret transfer
+
+### API
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `wss://worker/stream?room=PROJECT&device=ID&name=NAME` | WebSocket | Signaling connection |
+| `https://worker/api/rooms?room=PROJECT` | GET | List online devices |
+
+### Message Types
+
+| Type | Direction | Description |
+|---|---|---|
+| `offer` | peer-to-peer | WebRTC offer |
+| `answer` | peer-to-peer | WebRTC answer |
+| `ice-candidate` | peer-to-peer | ICE candidate |
+| `secret-updated` | broadcast | Notify peers of secret change |
+| `sync-request` | broadcast | Request state from peers |
+| `sync-response` | peer-to-peer | Send state to requesting peer |
+| `presence` | server-to-client | Online device list update |
 
 ## CLI Installation
 
@@ -78,25 +140,6 @@ envsec run -- npm start        # Run with secrets injected
 envsec update                  # Self-update
 ```
 
-## Commands
-
-| Command | Action |
-|---|---|
-| `just` | List all commands |
-| `just cli-build` | Build CLI debug binary |
-| `just cli-test` | Run CLI tests |
-| `just cli-release` | Build optimized CLI binary |
-| `just cli-lint` | Run clippy + fmt check |
-| `just fe-install` | Install frontend dependencies |
-| `just fe-dev` | Start Angular dev server |
-| `just fe-build` | Build frontend for production |
-| `just fe-test` | Run frontend tests |
-| `just build` | Build everything |
-| `just test` | Test everything |
-| `just lint` | Lint everything |
-| `just clean` | Clean all artifacts |
-| `just publish v0.1.0` | Tag + push to trigger CI release |
-
 ## Security
 
 | Concern | Mitigation |
@@ -106,6 +149,7 @@ envsec update                  # Self-update
 | Passphrase storage | Only Argon2id hash stored, never plaintext |
 | Clipboard leak | Forked background process clears after 2 min |
 | Stdout leak | Secrets never printed; only masked values |
+| Sync transport | WebRTC DTLS encrypted, signaling via WSS |
 
 ## Supported Platforms
 

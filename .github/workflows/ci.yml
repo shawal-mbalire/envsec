@@ -60,6 +60,24 @@ jobs:
       - name: Test
         run: cd frontend && bun test
 
+  workers:
+    name: Workers Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd workers && npm install
+
+      - name: Type check
+        run: cd workers && npx tsc --noEmit
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
