@@ -7,6 +7,7 @@ mod dotenv;
 mod output;
 mod project;
 mod session;
+mod sync;
 mod vault;
 
 use cli::{Cli, Commands};
@@ -16,13 +17,14 @@ const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const BUILD_DATE: &str = env!("ENVSEC_BUILD_DATE");
 const GIT_HASH: &str = env!("ENVSEC_GIT_HASH");
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Cli::parse();
 
     // Skip version check for these commands
     let skip_version_check = matches!(
         cli.command,
-        Commands::Version | Commands::Update
+        Commands::Version | Commands::Update | Commands::Devices | Commands::Sync { .. }
     );
 
     let result = match cli.command {
@@ -62,6 +64,15 @@ fn main() {
             Ok(())
         }
         Commands::Update => cli::update::run(),
+        Commands::Devices => cli::devices::run().await,
+        Commands::Sync {
+            ref project,
+            ref env,
+            push,
+            pull,
+        } => {
+            cli::sync::run(project.as_deref(), env.as_deref(), push, pull).await
+        }
     };
 
     if let Err(e) = result {

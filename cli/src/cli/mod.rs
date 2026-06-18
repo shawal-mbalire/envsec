@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod devices;
 pub mod export;
 pub mod get;
 pub mod import;
@@ -9,6 +10,7 @@ pub mod rm;
 pub mod run;
 pub mod set;
 pub mod status;
+pub mod sync;
 pub mod update;
 
 use clap::{Parser, Subcommand};
@@ -109,4 +111,21 @@ pub enum Commands {
     Version,
     /// Check for updates and install latest version
     Update,
+    /// List online devices in current project room
+    Devices,
+    /// Sync secrets with online devices
+    Sync {
+        /// Target project name
+        #[arg(long)]
+        project: Option<String>,
+        /// Target environment name
+        #[arg(long, short = 'e')]
+        env: Option<String>,
+        /// Push local secrets to peers
+        #[arg(long)]
+        push: bool,
+        /// Pull secrets from peers
+        #[arg(long)]
+        pull: bool,
+    },
 }

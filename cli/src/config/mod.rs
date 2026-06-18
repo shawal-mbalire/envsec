@@ -4,12 +4,14 @@ use std::path::PathBuf;
 
 const DEFAULT_SESSION_DURATION_SECS: u64 = 7200; // 2 hours
 const DEFAULT_CLIPBOARD_CLEAR_SECS: u64 = 120; // 2 minutes
+const DEFAULT_SIGNALING_SERVER: &str = "wss://envsec-signaling.shawal-mbalire.workers.dev";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub session: SessionConfig,
     pub clipboard: ClipboardConfig,
     pub output: OutputConfig,
+    pub sync: SyncConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,8 +29,20 @@ pub struct OutputConfig {
     pub color: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SyncConfig {
+    pub server_url: String,
+    pub device_id: String,
+    pub device_name: String,
+}
+
 impl Default for Config {
     fn default() -> Self {
+        let device_id = uuid::Uuid::new_v4().to_string();
+        let hostname = hostname::get()
+            .map(|h| h.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "unknown".to_string());
+
         Self {
             session: SessionConfig {
                 duration_secs: DEFAULT_SESSION_DURATION_SECS,
@@ -37,6 +51,11 @@ impl Default for Config {
                 clear_after_secs: DEFAULT_CLIPBOARD_CLEAR_SECS,
             },
             output: OutputConfig { color: true },
+            sync: SyncConfig {
+                server_url: DEFAULT_SIGNALING_SERVER.to_string(),
+                device_id,
+                device_name: hostname,
+            },
         }
     }
 }
