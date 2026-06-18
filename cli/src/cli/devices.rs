@@ -1,15 +1,33 @@
 use crate::config;
 use crate::output::{colors, table};
 use crate::project::resolver;
-use crate::sync::SyncClient;
+use crate::session;
+use crate::sync::{derive_room_id, SyncClient};
 
 pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let session = session::check_session().map_err(|e| {
+        format!(
+            "{}. Run {} to authenticate.",
+            e,
+            colors::bold("envsec auth")
+        )
+    })?;
+
     let cfg = config::load_config();
 
-    let room = match resolver::load_current_project() {
-        Ok(p) => format!("{}-{}", p.project, p.environment),
-        Err(_) => "default".to_string(),
+    let (proj, env) = match resolver::load_current_project() {
+        Ok(p) => (p.project, p.environment),
+        Err(_) => {
+            println!(
+                "{}",
+                colors::dim("No project set. Use 'envsec use <project> <environment>' first.")
+            );
+            return Ok(());
+        }
     };
+
+    // Derive room ID from passphrase hash + project + environment
+    let room = derive_room_id(&session.passphrase_hash, &proj, &env);
 
     let client = SyncClient::new(
         &cfg.sync.server_url,
@@ -19,8 +37,14 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     println!(
-        "{} Fetching online devices for room '{}'...",
+        "{} Fetching online devices for {} / {}...",
         colors::dim("*"),
+        colors::key_name(&proj),
+        colors::key_name(&env)
+    );
+    println!(
+        "{} {}",
+        colors::dim("Room:"),
         colors::key_name(&room)
     );
 
@@ -60,7 +84,11 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect();
 
-    table::print_table(&rows, Some(&format!("Online devices ({})", room)));
+    table::print_table(&rows, Some(&format!("Online devices")));
+    println!(
+        "{}",
+        colors::dim("Only devices with the same passphrase can see each other")
+    );
     println!();
 
     Ok(())

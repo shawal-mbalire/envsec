@@ -38,3 +38,5 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 futures-util = "0.3"
 uuid = { version = "1", features = ["v4"] }
 hostname = "0.4"
+sha2 = "0.10"
+hex = "0.4"

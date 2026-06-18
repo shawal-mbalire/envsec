@@ -4,7 +4,7 @@ use crate::config;
 use crate::output::colors;
 use crate::project::resolver;
 use crate::session;
-use crate::sync::SyncClient;
+use crate::sync::{derive_room_id, SyncClient};
 use crate::vault;
 
 pub async fn run(
@@ -40,7 +40,9 @@ pub async fn run(
         }
     };
 
-    let room = format!("{}-{}", proj, env);
+    // Derive room ID from passphrase hash + project + environment
+    // Only users who know the passphrase (and thus have the same hash) can join
+    let room = derive_room_id(&session.passphrase_hash, &proj, &env);
 
     let client = SyncClient::new(
         &cfg.sync.server_url,
@@ -63,6 +65,11 @@ pub async fn run(
         colors::header("envsec sync"),
         colors::key_name(&proj),
         colors::key_name(&env)
+    );
+    println!(
+        "{} {}",
+        colors::dim("Room:"),
+        colors::key_name(&room)
     );
     println!();
 
@@ -94,6 +101,10 @@ pub async fn run(
     println!(
         "{}",
         colors::dim("Use --pull to request secrets from peers")
+    );
+    println!(
+        "{}",
+        colors::dim("Only devices with the same passphrase can join this room")
     );
 
     Ok(())
