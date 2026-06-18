@@ -13,6 +13,8 @@ use cli::{Cli, Commands};
 use output::colors;
 
 const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+const BUILD_DATE: &str = env!("ENVSEC_BUILD_DATE");
+const GIT_HASH: &str = env!("ENVSEC_GIT_HASH");
 
 fn main() {
     let cli = Cli::parse();
@@ -56,7 +58,7 @@ fn main() {
         } => cli::projects::run_use(project, environment.as_deref()),
         Commands::RmProject { ref project } => cli::projects::run_rm_project(project),
         Commands::Version => {
-            println!("envsec {}", CURRENT_VERSION);
+            println!("envsec {} ({} {})", CURRENT_VERSION, BUILD_DATE, GIT_HASH);
             Ok(())
         }
         Commands::Update => cli::update::run(),

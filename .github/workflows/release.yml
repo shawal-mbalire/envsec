@@ -52,6 +52,11 @@ jobs:
             cross: false
             archive: zip
 
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            cross: false
+            archive: zip
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,13 +70,24 @@ jobs:
         if: matrix.cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
+      - name: Get build date
+        id: date
+        shell: bash
+        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
       - name: Build (cross)
         if: matrix.cross
         run: cross build --release --target ${{ matrix.target }}
+        env:
+          BUILD_DATE: ${{ steps.date.outputs.date }}
+          GIT_SHA: ${{ github.sha }}
 
       - name: Build (native)
         if: ${{ !matrix.cross }}
         run: cargo build --release --target ${{ matrix.target }}
+        env:
+          BUILD_DATE: ${{ steps.date.outputs.date }}
+          GIT_SHA: ${{ github.sha }}
 
       - name: Package (unix)
         if: matrix.archive == 'tar.gz'
@@ -106,8 +122,33 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Generate release notes
+        id: notes
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          TAG="${GITHUB_REF#refs/tags/}"
+          cat <<EOF > release_notes.md
+          ## envsec ${TAG} (${DATE})
+
+          ### Installation
+
+          **One-liner (Linux/macOS):**
+          \`\`\`bash
+          curl -sSf https://raw.githubusercontent.com/shawal-mbalire/envsec/main/install.sh | bash
+          \`\`\`
+
+          **Windows (PowerShell):**
+          Download the \`.zip\` asset for your architecture and add to PATH.
+
+          ### Checksums
+          See assets below for platform-specific binaries.
+
+          ### Changelog
+          See [CHANGELOG.md](https://github.com/shawal-mbalire/envsec/blob/main/CHANGELOG.md) for details.
+          EOF
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release_notes.md
           files: artifacts/*
