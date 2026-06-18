@@ -2,132 +2,100 @@
 
 Local-first encrypted secret manager. A self-hosted, git-shareable alternative to Doppler.
 
-## Features
+## Monorepo Structure
 
-- **AES-256-GCM encryption** with Argon2id key derivation
-- **Local-first** — all secrets stored in `~/.envsec/`, no cloud dependency
-- **Git-shareable** — encrypted vault can be committed to a private repo
-- **Clipboard auto-clear** — secrets copied to clipboard are cleared after 2 minutes
-- **Session management** — configurable auth expiry (default 2 hours)
-- **Project binding** — `.envsec` file in project root maps to vault entries
-- **.env import/export** — seamless integration with existing workflows
-- **Self-update** — `envsec update` checks and installs latest version
-- **Cross-platform** — Linux, macOS, Windows
-- **Fast** — Rust binary with minimal overhead
-
-## Installation
-
-### One-liner (Linux/macOS)
-
-```bash
-curl -sSf https://raw.githubusercontent.com/shawal-mbalire/envsec/main/install.sh | bash
+```
+envsec/
+├── .sha/                    # SHA stack config
+├── .github/workflows/       # CI/CD
+├── cli/                     # Rust CLI binary
+│   ├── src/
+│   ├── Cargo.toml
+│   └── install.sh
+├── frontend/                # Angular 22 web dashboard
+│   ├── src/
+│   ├── package.json
+│   └── angular.json
+├── justfile                 # Master task runner
+└── README.md
 ```
 
-Or with wget:
+## Prerequisites
 
-```bash
-wget -qO- https://raw.githubusercontent.com/shawal-mbalire/envsec/main/install.sh | bash
-```
-
-### Custom install directory
-
-```bash
-curl -sSf https://raw.githubusercontent.com/shawal-mbalire/envsec/main/install.sh | INSTALL_DIR=~/.local/bin bash
-```
-
-### From GitHub Releases
-
-Download the latest binary for your platform from [Releases](https://github.com/shawal-mbalire/envsec/releases).
-
-### From Source
-
-```bash
-git clone https://github.com/shawal-mbalire/envsec.git
-cd envsec
-cargo install --path .
-```
-
-## Updating
-
-```bash
-envsec update
-```
-
-This checks GitHub for the latest release and replaces the binary in-place. You will be notified of available updates automatically when running other commands.
+- [Rust](https://rustup.rs/) 1.70+
+- [Bun](https://bun.sh) 1.0+
+- [Just](https://github.com/casey/just) — task runner
 
 ## Quick Start
 
 ```bash
-# Initialize vault with a master passphrase
-envsec init
+# List all commands
+just
 
-# Bind current directory to a project
-envsec use myapp dev
+# Install frontend dependencies
+just fe-install
 
-# Set a secret
-envsec set DATABASE_URL "postgres://user:pass@localhost/db"
+# Build CLI
+just cli-build
 
-# Set a secret interactively (hidden input)
-envsec set API_KEY
+# Run CLI tests
+just cli-test
 
-# Copy secret to clipboard (auto-clears in 2 minutes)
-envsec get DATABASE_URL
+# Start frontend dev server
+just fe-dev
 
-# Show masked value
-envsec get --show DATABASE_URL
+# Build everything
+just build
 
-# List all secrets in current project
-envsec list
+# Test everything
+just test
+```
 
-# Run a command with secrets injected
-envsec run -- npm start
+## CLI Installation
 
-# Import from .env file
-envsec import .env
+### One-liner (Linux/macOS)
 
-# Export to .env file (masked by default)
-envsec export --file .env
-envsec export --file .env --raw  # actual values
+```bash
+curl -sSf https://raw.githubusercontent.com/shawal-mbalire/envsec/main/cli/install.sh | bash
+```
+
+### From Source
+
+```bash
+cd cli
+cargo install --path .
+```
+
+## CLI Usage
+
+```bash
+envsec init                    # Create vault, set passphrase
+envsec use myapp dev           # Bind project
+envsec set DATABASE_URL "..."  # Set secret
+envsec get DATABASE_URL        # Copy to clipboard (2-min clear)
+envsec get --show DATABASE_URL # Show masked value
+envsec run -- npm start        # Run with secrets injected
+envsec update                  # Self-update
 ```
 
 ## Commands
 
-| Command | Description |
+| Command | Action |
 |---|---|
-| `envsec init` | Create vault, set master passphrase |
-| `envsec auth` | Authenticate (starts session, default 2h) |
-| `envsec auth --duration 4h` | Authenticate with custom session duration |
-| `envsec status` | Show session, project, vault info |
-| `envsec set KEY [VALUE]` | Set a secret (interactive if value omitted) |
-| `envsec get KEY` | Copy secret to clipboard (2-min auto-clear) |
-| `envsec get --show KEY` | Show masked value to stdout |
-| `envsec list` | List secrets in current project/env |
-| `envsec list --all` | List all projects and environments |
-| `envsec rm KEY` | Remove a secret |
-| `envsec rename OLD NEW` | Rename a secret |
-| `envsec import FILE` | Import a .env file |
-| `envsec export` | Export secrets as .env (masked) |
-| `envsec export --raw` | Export with actual values |
-| `envsec run -- CMD ARGS` | Run command with secrets as env vars |
-| `envsec projects` | List all projects |
-| `envsec use PROJECT [ENV]` | Switch active project/env |
-| `envsec rm-project PROJECT` | Delete a project and all its secrets |
-| `envsec update` | Check for updates and install latest version |
-
-## Configuration
-
-`~/.envsec/config.toml`:
-
-```toml
-[session]
-duration_secs = 7200          # 2 hours
-
-[clipboard]
-clear_after_secs = 120        # 2 minutes
-
-[output]
-color = true
-```
+| `just` | List all commands |
+| `just cli-build` | Build CLI debug binary |
+| `just cli-test` | Run CLI tests |
+| `just cli-release` | Build optimized CLI binary |
+| `just cli-lint` | Run clippy + fmt check |
+| `just fe-install` | Install frontend dependencies |
+| `just fe-dev` | Start Angular dev server |
+| `just fe-build` | Build frontend for production |
+| `just fe-test` | Run frontend tests |
+| `just build` | Build everything |
+| `just test` | Test everything |
+| `just lint` | Lint everything |
+| `just clean` | Clean all artifacts |
+| `just publish v0.1.0` | Tag + push to trigger CI release |
 
 ## Security
 
@@ -138,14 +106,6 @@ color = true
 | Passphrase storage | Only Argon2id hash stored, never plaintext |
 | Clipboard leak | Forked background process clears after 2 min |
 | Stdout leak | Secrets never printed; only masked values |
-| Process listing | Secrets injected via `envs()`, not command-line args |
-
-## Sharing Across Machines
-
-1. Initialize on one machine: `envsec init`
-2. Copy `~/.envsec/vault.enc` to another machine (via git, rsync, etc.)
-3. On the new machine, run `envsec auth` with the same passphrase
-4. The `.envsec` project binding file can be committed to your project repo
 
 ## Supported Platforms
 
@@ -158,6 +118,7 @@ color = true
 | `x86_64-apple-darwin` | macOS | Intel |
 | `aarch64-apple-darwin` | macOS | Apple Silicon |
 | `x86_64-pc-windows-msvc` | Windows | x86_64 |
+| `aarch64-pc-windows-msvc` | Windows | ARM64 |
 
 ## License
 

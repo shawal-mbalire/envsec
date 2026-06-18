@@ -1,0 +1,22 @@
+{
+  "name": "envsec",
+  "version": "0.1.0",
+  "description": "Local-first encrypted secret manager",
+  "features": ["cli", "web-client"],
+  "modules": {
+    "cli": {
+      "type": "rust",
+      "path": "cli",
+      "description": "envsec CLI binary"
+    },
+    "web-client": {
+      "type": "angular",
+      "path": "frontend",
+      "description": "envsec web dashboard"
+    }
+  },
+  "deployment": {
+    "target": "firebase",
+    "project": "envsec"
+  }
+}

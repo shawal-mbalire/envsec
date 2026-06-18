@@ -24,5 +24,5 @@ fn main() {
     println!("cargo:rustc-env=ENVSEC_GIT_HASH={}", hash);
 
     // Re-run if git HEAD changes
-    println!("cargo:rerun-if-changed=.git/HEAD");
+    println!("cargo:rerun-if-changed=../.git/HEAD");
 }

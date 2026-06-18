@@ -1,2 +1,25 @@
-/target/
-.envsec
+# Rust
+target/
+cli/target/
+
+# Node/Angular
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Env
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SHA stack
+.sha/*.log

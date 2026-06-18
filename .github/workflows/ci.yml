@@ -10,8 +10,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Test
+  cli:
+    name: CLI Tests
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -32,14 +32,33 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            cli/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('cli/Cargo.lock') }}
 
       - name: Run tests
-        run: cargo test --verbose
+        run: cd cli && cargo test --verbose
 
       - name: Build release
-        run: cargo build --release --verbose
+        run: cd cli && cargo build --release --verbose
+
+  frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: cd frontend && bun install
+
+      - name: Build
+        run: cd frontend && bun run build:prod
+
+      - name: Test
+        run: cd frontend && bun test
 
   lint:
     name: Lint
@@ -54,7 +73,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: Check formatting
-        run: cargo fmt --check
+        run: cd cli && cargo fmt --check
 
       - name: Clippy
-        run: cargo clippy -- -D warnings
+        run: cd cli && cargo clippy -- -D warnings
